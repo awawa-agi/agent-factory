@@ -105,6 +105,11 @@ class BasicFlow:
             if self.profiler_manager:
                 profiling_started = self.profiler_manager.start_profiling()
 
+            # Run evaluation if configured and due (before training)
+            with CpuBarrier(self.accelerator):
+                if self.accelerator.is_main_process and self._should_run_evaluation(self._iteration):
+                    self.run_evaluation(self._iteration)
+
             self._sync_model_weights()
 
             with CpuBarrier(self.accelerator):
@@ -151,11 +156,6 @@ class BasicFlow:
                         profile_file = self.rollout_save_dir / f"profile_{profiler_name}_iter{self._iteration}.html"
                         current_step = self._iteration
                         self._async_save(self._save_profile_data, profile_file, html_content, profiler_name, current_step)
-            
-            # Run evaluation if configured and due
-            with CpuBarrier(self.accelerator):
-                if self.accelerator.is_main_process and self._should_run_evaluation(self._iteration):
-                    self.run_evaluation(self._iteration)
             
             self._iteration += 1
 
@@ -540,8 +540,8 @@ class BasicFlow:
         import importlib.util
         from pathlib import Path
         
-        # Get project root directory (where AgentFactory root is)
-        project_root = Path(__file__).parent.parent.parent.parent
+        # Get current working directory (where the training is running from)
+        project_root = Path.cwd()
         
         for plugin_path in plugins:
             try:
