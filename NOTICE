@@ -1,0 +1,17 @@
+AgentFactory
+Copyright 2025 AgentFactory Team
+
+This product includes software developed by:
+
+- TRL (Transformer Reinforcement Learning)
+  Copyright HuggingFace Inc.
+  Licensed under the Apache License, Version 2.0
+  https://github.com/huggingface/trl
+
+- VeRL (Versatile Reinforcement Learning)
+  Copyright Volcengine
+  Licensed under the Apache License, Version 2.0  
+  https://github.com/volcengine/verl
+
+This software incorporates concepts, design patterns, and reference implementations
+from the above projects in accordance with their respective licenses.
