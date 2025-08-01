@@ -1,0 +1,314 @@
+/**
+ * Token Viewer Styles
+ * Styles for the chunked token viewer with virtual scrolling
+ */
+
+/* Token Viewer Container */
+.token-viewer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+}
+
+/* Token Controls */
+.token-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.control-group label {
+    font-weight: 600;
+    color: var(--color-pink-700);
+    min-width: 4rem;
+}
+
+.mode-buttons {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.mode-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    background: var(--glass-bg-10);
+    color: var(--color-pink-700);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mode-btn:hover {
+    background: var(--glass-bg-20);
+    transform: translateY(-1px);
+}
+
+.mode-btn.active {
+    background: var(--color-pink-500);
+    color: white;
+    border-color: var(--color-pink-600);
+}
+
+.jump-input {
+    width: 8rem;
+    padding: 0.5rem;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.375rem;
+    background: var(--glass-bg-10);
+    color: var(--text-primary);
+}
+
+.sequence-info, .position-info {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: var(--color-pink-600);
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Overview Container */
+.overview-container {
+    padding: 1rem;
+}
+
+.overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.overview-header h4 {
+    margin: 0;
+    color: var(--color-pink-700);
+    font-size: 1.125rem;
+}
+
+.overview-help {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.overview-canvas {
+    width: 100%;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+}
+
+.overview-canvas:hover {
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+/* Virtual Token Container */
+.virtual-token-container {
+    flex: 1;
+    min-height: 400px;
+    padding: 1rem;
+}
+
+.token-viewport {
+    height: 100%;
+    overflow-y: auto;
+    position: relative;
+    border: 1px solid var(--glass-border);
+    border-radius: 0.5rem;
+    background: var(--glass-bg-05);
+}
+
+.virtual-container {
+    position: relative;
+    width: 100%;
+}
+
+.visible-container {
+    line-height: 1.8;
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+}
+
+/* Token Styles */
+.token {
+    display: inline-block;
+    padding: 0.125rem 0.25rem;
+    margin: 0 0.5px;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    border: 1px solid transparent;
+    font-weight: 500;
+}
+
+.token:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+/* Token tooltip */
+.token::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    white-space: pre-line;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+    margin-bottom: 0.25rem;
+    min-width: 120px;
+    text-align: center;
+}
+
+.token:hover::after {
+    opacity: 1;
+}
+
+/* Loading and Error States */
+.loading-state, .error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: var(--text-secondary);
+}
+
+.loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid var(--glass-border);
+    border-top: 2px solid var(--color-pink-500);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+.error-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.error-message {
+    text-align: center;
+    color: var(--color-red-600);
+}
+
+/* Token Content Fallback */
+.token-content-fallback {
+    padding: 2rem;
+    text-align: center;
+}
+
+.token-title {
+    color: var(--color-pink-700);
+    margin-bottom: 1rem;
+}
+
+.token-info {
+    color: var(--text-secondary);
+}
+
+.token-info p {
+    margin: 0.5rem 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .token-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .control-group {
+        flex-wrap: wrap;
+    }
+    
+    .mode-buttons {
+        flex-wrap: wrap;
+    }
+    
+    .sequence-info, .position-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .visible-container {
+        font-size: 0.875rem;
+        padding: 0.75rem;
+    }
+    
+    .token {
+        padding: 0.1rem 0.2rem;
+        margin: 0 1px;
+    }
+}
+
+@media (max-width: 480px) {
+    .overview-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .visible-container {
+        font-size: 0.8rem;
+        line-height: 1.6;
+    }
+    
+    .virtual-token-container {
+        min-height: 300px;
+    }
+}
+
+/* Animation for spinning loader */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Scrollbar styling for webkit browsers */
+.token-viewport::-webkit-scrollbar {
+    width: 8px;
+}
+
+.token-viewport::-webkit-scrollbar-track {
+    background: var(--glass-bg-10);
+    border-radius: 4px;
+}
+
+.token-viewport::-webkit-scrollbar-thumb {
+    background: var(--color-pink-300);
+    border-radius: 4px;
+}
+
+.token-viewport::-webkit-scrollbar-thumb:hover {
+    background: var(--color-pink-400);
+}
