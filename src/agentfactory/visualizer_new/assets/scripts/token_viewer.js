@@ -253,56 +253,29 @@ class TokenViewer {
         // Use pre-processed data - no more runtime map() calls!
         this.currentTokenData = sequence.tokenDataReady;
         
-        // Create token container
-        const tokenList = document.createElement('div');
-        tokenList.className = 'token-list';
+        // Generate complete HTML with styles - much faster than DOM creation!
+        const html = this.generateTokensHTML();
         
-        // Use DocumentFragment for batch DOM operations to minimize reflow
-        const fragment = document.createDocumentFragment();
-        
-        // Create DOM elements with minimal data
-        this.currentTokenData.forEach((tokenData, index) => {
-            const tokenElement = document.createElement('span');
-            tokenElement.className = 'token';
-            tokenElement.textContent = tokenData.token;
-            tokenElement.title = `LogProb: ${tokenData.logprob.toFixed(3)}\nEntropy: ${tokenData.entropy.toFixed(3)}\nAdvantage: ${tokenData.advantage.toFixed(3)}`;
-            
-            // Store only the index to link back to JavaScript data
-            tokenElement._tokenIndex = index;
-            
-            // Add to fragment instead of directly to DOM
-            fragment.appendChild(tokenElement);
-        });
-        
-        // Single DOM insertion - much faster than 1000+ individual appendChild calls
-        tokenList.appendChild(fragment);
-        
-        // Replace content once
-        content.innerHTML = '';
-        content.appendChild(tokenList);
-        
-        // Apply current color mode to new DOM elements
-        this.updateTokenStyles();
+        // Single innerHTML update - extremely fast
+        content.innerHTML = `<div class="token-list">${html}</div>`;
     }
     
-    updateTokenStyles() {
-        // Fast style update using JavaScript memory data - no DOM attribute access!
-        const tokens = this.elements.tokenContent.querySelectorAll('.token');
-        
-        tokens.forEach(tokenElement => {
-            const tokenIndex = tokenElement._tokenIndex;
-            const tokenData = this.currentTokenData[tokenIndex];
-            
-            // Direct access from JavaScript memory - no parseFloat needed!
-            const logprob = tokenData.logprob;
-            const entropy = tokenData.entropy;
-            const advantage = tokenData.advantage;
-            const assistantMask = tokenData.assistantMask;
-            
-            // Apply style based on current mode
-            tokenElement.style.cssText = this.getTokenStyle(logprob, entropy, advantage, assistantMask);
+    generateTokensHTML() {
+        let html = '';
+        this.currentTokenData.forEach((tokenData, index) => {
+            html += this.generateTokenHTML(tokenData, index);
         });
+        return html;
     }
+    
+    generateTokenHTML(tokenData, index) {
+        const style = this.getTokenStyle(tokenData.logprob, tokenData.entropy, tokenData.advantage, tokenData.assistantMask);
+        const escapedToken = this.escapeHtml(tokenData.token);
+        const tooltip = `LogProb: ${tokenData.logprob.toFixed(3)}&#10;Entropy: ${tokenData.entropy.toFixed(3)}&#10;Advantage: ${tokenData.advantage.toFixed(3)}`;
+        
+        return `<span class="token" style="${style}" title="${tooltip}">${escapedToken}</span>`;
+    }
+    
     
     getTokenStyle(logprob, entropy, advantage, assistantMask) {
         if (!assistantMask) {
@@ -336,8 +309,11 @@ class TokenViewer {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
         
-        // Fast style update without DOM rebuilding
-        this.updateTokenStyles();
+        // Re-render with new color mode - much faster than individual style updates
+        if (this.currentTokenData) {
+            const html = this.generateTokensHTML();
+            this.elements.tokenContent.innerHTML = `<div class="token-list">${html}</div>`;
+        }
     }
     
     setupEventListeners() {
