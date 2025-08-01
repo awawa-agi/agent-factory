@@ -650,6 +650,7 @@ class BasicFlow:
         try:
             import wandb
             from ..visualizer.token_visualizer import generate_token_visualizer_html
+            from ..visualizer_new import create_token_app
             
             if not wandb.run or not per_token_logs:
                 return
@@ -689,11 +690,20 @@ class BasicFlow:
                 max_sequences = min(self.config.num_token_logs_to_upload, len(sequences_data))
                 sequences_data = sequences_data[:max_sequences]
                 
-                html_content = generate_token_visualizer_html(
-                    sequences_data,
-                    title=f"Token Analysis - Step {self._iteration}",
-                    collapse_min_length=3
-                )
+                # Try new optimized visualizer first, fallback to legacy
+                try:
+                    html_content = create_token_app(
+                        token_data=sequences_data,
+                        title=f"🌸 Token Analysis - Step {self._iteration} 🌸"
+                    )
+                    logger.debug(f"Using optimized token visualizer for {len(sequences_data)} sequences")
+                except Exception as e:
+                    logger.warning(f"Optimized visualizer failed, using legacy: {e}")
+                    html_content = generate_token_visualizer_html(
+                        sequences_data,
+                        title=f"Token Analysis - Step {self._iteration}",
+                        collapse_min_length=3
+                    )
                 
                 wandb.log({"Token Visualizer": wandb.Html(html_content, inject=False)}, step=self._iteration)
                 logger.debug(f"Uploaded token visualizer for {len(sequences_data)} sequences to wandb")
