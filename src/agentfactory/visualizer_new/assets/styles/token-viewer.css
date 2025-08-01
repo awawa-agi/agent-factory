@@ -146,17 +146,56 @@
     font-size: 0.95rem;
 }
 
-/* Token Styles */
+/* Token Styles - Enhanced with React-style color management */
 .token {
     display: inline-block;
     padding: 0.125rem 0.25rem;
     margin: 0 0.5px;
     border-radius: 0.25rem;
     cursor: pointer;
-    transition: all 0.15s ease;
+    /* transition: all 0.15s ease; */  /* ← 临时禁用transition测试性能 */
     position: relative;
     border: 1px solid transparent;
     font-weight: 500;
+    
+    /* Use CSS variables for continuous colors - major performance boost */
+    background: var(--token-bg, transparent);
+    color: var(--token-color, inherit);
+    opacity: var(--token-opacity, 1);
+}
+
+/* ✨ NEW: Mode-specific color mappings using pre-calculated HSL colors */
+/* This enables instant color mode switching without DOM rebuild */
+
+.token-list[data-mode="logprob"] .token {
+    --token-bg: var(--lp-color);
+    --token-color: white;
+    --token-opacity: 1;
+}
+
+.token-list[data-mode="entropy"] .token {
+    --token-bg: var(--en-color);
+    --token-color: white;
+    --token-opacity: 1;
+}
+
+.token-list[data-mode="advantage"] .token {
+    --token-bg: var(--adv-color);
+    --token-color: white;
+    --token-opacity: 1;
+}
+
+.token-list[data-mode="none"] .token {
+    --token-bg: transparent;
+    --token-color: inherit;
+    --token-opacity: 1;
+}
+
+/* Special handling for non-assistant tokens - always dimmed regardless of mode */
+.token[data-assistant="false"] {
+    --token-bg: transparent !important;
+    --token-color: #9e9e9e !important;
+    --token-opacity: 0.6 !important;
 }
 
 .token:hover {

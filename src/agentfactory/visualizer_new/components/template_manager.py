@@ -153,17 +153,34 @@ class TemplateManager:
                 mime_type = 'image/webp'  # Default fallback
             
             return f"""
-/* Fixed Background Image - {display_name} */
-.app {{
+/* Fixed Background Image - {display_name} - iPad Safari Compatible */
+.app::before {{
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background-image: url(data:{mime_type};base64,{base64_data});
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    z-index: -1;
+    /* Optimize for mobile performance */
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }}
 
-/* Ensure background doesn't scroll with content */
+/* Ensure app container is properly positioned */
+.app {{
+    position: relative;
+    min-height: 100vh;
+}}
+
 .app-container {{
+    position: relative;
+    z-index: 1;
     background: none;
 }}
 """
