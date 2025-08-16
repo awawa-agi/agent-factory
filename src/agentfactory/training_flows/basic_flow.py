@@ -105,15 +105,17 @@ class BasicFlow:
             if self.profiler_manager:
                 profiling_started = self.profiler_manager.start_profiling()
 
-            # Run evaluation if configured and due (before training)
+            self._sync_model_weights()
+
+            # Run evaluation if configured and due (after weight sync)
             with CpuBarrier(self.accelerator):
                 if self.accelerator.is_main_process and self._should_run_evaluation(self._iteration):
                     self.run_evaluation(self._iteration)
 
-            self._sync_model_weights()
-
             with CpuBarrier(self.accelerator):
                 if self.accelerator.is_main_process:
+                    # Wake up inference engine for training rollout (might be asleep after evaluation)
+                    self.inference_engine.wake_up()
                     batch_request = self.get_batch_requests(self._iteration)
                     batch_rollout_result = self.rollout_worker.run(batch_request)
                     self._estimate_advantages(batch_rollout_result)
@@ -146,6 +148,36 @@ class BasicFlow:
                 # Generate and upload token visualizer HTML
                 if "wandb" in self.config.report_to and per_token_logs:
                     self._upload_token_visualizer(per_token_logs)
+                
+                # Convert to unified format and save for analysis
+                if per_token_logs:
+                    from ..visualizer_ex import convert_rollout_batch, aggregate_step_data
+                    
+                    # HACK: Attach data source info to batch_rollout_result for converter
+                    # TODO: Clean this up with proper parameter passing
+                    batch_rollout_result._data_source_info = {
+                        'name': getattr(self.config.data.train, 'hf_hub_url', None) or 
+                                getattr(self.config.data.train, 'file_name', None) or 'unknown',
+                        'source_type': 'hf_hub' if getattr(self.config.data.train, 'hf_hub_url', None) else 'local_file',
+                        'split': getattr(self.config.data.train, 'split', None)
+                    }
+                    
+                    groups = convert_rollout_batch(
+                        batch_rollout_result, 
+                        per_token_logs, 
+                        processing_class=self.trainer.processing_class
+                    )
+                    step_data = aggregate_step_data(
+                        step=self._iteration, 
+                        groups=groups, 
+                        training_metrics=metrics
+                    )
+                    
+                    # Save unified data for analysis
+                    unified_data_path = self.rollout_save_dir / f"unified_step_data_iter{self._iteration}.json"
+                    with open(unified_data_path, "w") as f:
+                        f.write(step_data.model_dump_json(indent=2))
+                    logger.info(f"Unified step data saved to {unified_data_path}")
                 
                 # Stop profiling and async save/upload results
                 if profiling_started and self.profiler_manager:
@@ -246,9 +278,9 @@ class BasicFlow:
         if self.config.evaluation.steps is None:
             return False
         
-        # Run on first step if configured
-        if iteration == 0 and self.config.evaluation.on_first_step:
-            return True
+        # Handle first step case
+        if iteration == 0:
+            return self.config.evaluation.on_first_step
             
         # Run based on evaluation frequency
         if self.config.evaluation.steps > 0 and iteration % self.config.evaluation.steps == 0:

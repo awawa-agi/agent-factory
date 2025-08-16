@@ -305,8 +305,12 @@ class AgentTrainer:
         self.lr_scheduler.step()
         self.optimizer.zero_grad()
 
-        # Log parameter update details
-        lr_info = f"learning_rate: {learning_rates[0]}" if len(learning_rates) == 1 else f"learning_rates: {learning_rates}"
+        # Log parameter update details with formatted learning rates
+        if len(learning_rates) == 1:
+            lr_info = f"learning_rate: {learning_rates[0]:.2e}"
+        else:
+            formatted_lrs = [f"{lr:.2e}" for lr in learning_rates]
+            lr_info = f"learning_rates: [{', '.join(formatted_lrs)}]"
         logger.trace(
             f"Process {self.accelerator.process_index}: "
             f"Parameters updated - "
