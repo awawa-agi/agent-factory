@@ -331,8 +331,8 @@ class TokenViewer {
         // Use pre-processed data - no more runtime map() calls!
         this.currentTokenData = sequence.tokenDataReady;
         
-        // Progressive DOM rendering - batch size 2000, no innerHTML
-        this.renderTokensInBatches(content, 2000);
+        // Simple one-time rendering - much faster on iPad Safari
+        this.renderTokensSimple(content);
     }
     
     generateTokensHTML() {
@@ -343,54 +343,29 @@ class TokenViewer {
         return html;
     }
     
-    renderTokensInBatches(content, batchSize) {
-        const totalTokens = this.currentTokenData.length;
-        let currentIndex = 0;
-        
+    renderTokensSimple(content) {
         // Create container with initial color mode
         const tokenList = document.createElement('div');
         tokenList.className = 'token-list';
-        tokenList.setAttribute('data-mode', this.colorMode); // ✨ Set initial color mode
+        tokenList.setAttribute('data-mode', this.colorMode);
+        
+        // Generate HTML string - simple and fast like old version
+        const tokensHTML = this.currentTokenData.map((tokenData, index) => {
+            const assistantAttr = tokenData.assistantMask ? 'true' : 'false';
+            const tooltip = `LogProb: ${tokenData.logprob.toFixed(3)}\\nEntropy: ${tokenData.entropy.toFixed(3)}\\nAdvantage: ${tokenData.advantage.toFixed(3)}`;
+            
+            // Use CSS variables for colors but set them via style attribute for simplicity
+            const cssVars = `--lp-color: ${tokenData.lpColor}; --en-color: ${tokenData.enColor}; --adv-color: ${tokenData.advColor};`;
+            
+            return `<span class="token" data-assistant="${assistantAttr}" style="${cssVars}" title="${tooltip}">${this.escapeHtml(tokenData.token)}</span>`;
+        }).join('');
+        
+        // One-time innerHTML - let browser optimize this
+        tokenList.innerHTML = tokensHTML;
+        
+        // Replace content
         content.innerHTML = '';
         content.appendChild(tokenList);
-        
-        const renderNextBatch = () => {
-            if (currentIndex >= totalTokens) return;
-            
-            const batchEnd = Math.min(currentIndex + batchSize, totalTokens);
-            const batch = this.currentTokenData.slice(currentIndex, batchEnd);
-            
-            // Create DOM elements for this batch with PRE-CALCULATED COLORS
-            const fragment = document.createDocumentFragment();
-            batch.forEach((tokenData, localIndex) => {
-                const span = document.createElement('span');
-                span.className = 'token';
-                
-                // ✨ Set pre-calculated color CSS variables (one-time setup)
-                span.style.setProperty('--lp-color', tokenData.lpColor);
-                span.style.setProperty('--en-color', tokenData.enColor);
-                span.style.setProperty('--adv-color', tokenData.advColor);
-                
-                // Set assistant mask for CSS selector targeting
-                span.setAttribute('data-assistant', tokenData.assistantMask ? 'true' : 'false');
-                
-                span.textContent = tokenData.token;
-                span.title = `LogProb: ${tokenData.logprob.toFixed(3)}\nEntropy: ${tokenData.entropy.toFixed(3)}\nAdvantage: ${tokenData.advantage.toFixed(3)}`;
-                fragment.appendChild(span);
-            });
-            
-            // Append batch to container
-            tokenList.appendChild(fragment);
-            
-            currentIndex = batchEnd;
-            
-            // Schedule next batch
-            if (currentIndex < totalTokens) {
-                setTimeout(renderNextBatch, 0);
-            }
-        };
-        
-        renderNextBatch();
     }
     
     generateTokenHTML(tokenData, index) {
@@ -414,17 +389,12 @@ class TokenViewer {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
         
-        // ✨ PERFORMANCE REVOLUTION: Only change CSS selector, no DOM rebuild!
-        // This changes 200-500ms operation to 1-5ms operation
+        // Simple CSS attribute change - instant mode switching
         const tokenContainer = this.elements.tokenContent.querySelector('.token-list');
         if (tokenContainer) {
             tokenContainer.setAttribute('data-mode', mode);
             console.log(`🚀 Instant color mode switch to: ${mode}`);
         }
-        
-        // ❌ REMOVED: No more expensive DOM rebuilding!
-        // Old approach: this.renderTokensInBatches(this.elements.tokenContent, 2000);
-        // New approach: CSS does all the work instantly via selectors
     }
     
     setupEventListeners() {

@@ -11,7 +11,7 @@ from .data.data_processor import UnifiedDataProcessor
 from .components.template_manager import TemplateManager
 
 # Main API functions - unified interface
-def create_conversation_app(results, title="AgentFactory Conversation Viewer", background="waves.webp", **kwargs):
+def create_conversation_app(results, title="AgentFactory Conversation Viewer", background="waves_hq.webp", **kwargs):
     """Create a conversation visualization app
     
     Args:
@@ -24,7 +24,7 @@ def create_conversation_app(results, title="AgentFactory Conversation Viewer", b
     app_data = processor.process_rollout_results(results)
     return AgentFactoryApp.create_app(app_data, view_type="conversation", title=title, background=background, **kwargs)
 
-def create_token_app(token_data, title="AgentFactory Token Analyzer", background="waves.webp", **kwargs):
+def create_token_app(token_data, title="AgentFactory Token Analyzer", background="waves_hq.webp", **kwargs):
     """Create a token visualization app
     
     Args:
@@ -37,7 +37,7 @@ def create_token_app(token_data, title="AgentFactory Token Analyzer", background
     app_data = processor.process_token_data(token_data)
     return AgentFactoryApp.create_app(app_data, view_type="token", title=title, background=background, **kwargs)
 
-def create_unified_app(rollout_results=None, token_data=None, title="AgentFactory Viewer", background="waves.webp", **kwargs):
+def create_unified_app(rollout_results=None, token_data=None, title="AgentFactory Viewer", background="waves_hq.webp", **kwargs):
     """Create a unified app with both conversation and token views
     
     Args:

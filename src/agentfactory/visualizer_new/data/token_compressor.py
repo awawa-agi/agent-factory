@@ -149,8 +149,25 @@ class TokenDataCompressor:
         
         # Compress quantized data
         json_data = json.dumps(quantized_sequences, separators=(',', ':'))
+        original_size = len(json_data.encode('utf-8'))
         compressed_bytes = gzip.compress(json_data.encode('utf-8'))
         compressed_base64 = base64.b64encode(compressed_bytes).decode('ascii')
+        
+        # Calculate and print compression statistics
+        compressed_size = len(compressed_bytes)
+        base64_size = len(compressed_base64)
+        compression_ratio = compressed_size / original_size if original_size > 0 else 0.0
+        space_saved = (1 - compression_ratio) * 100
+        
+        print(f"🗜️  Compression Stats for group '{group_id}':")
+        print(f"   Original size:    {original_size:,} bytes")
+        print(f"   Compressed size:  {compressed_size:,} bytes")
+        print(f"   Base64 size:      {base64_size:,} bytes")
+        print(f"   Compression ratio: {compression_ratio:.3f}")
+        print(f"   Space saved:      {space_saved:.1f}%")
+        print(f"   Total sequences:  {len(sequences)}")
+        print(f"   Total tokens:     {sum(len(seq.get('tokens', [])) for seq in sequences):,}")
+        print("")
         
         return CompressedTokenGroup(
             group_id=group_id,

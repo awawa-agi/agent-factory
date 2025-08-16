@@ -153,29 +153,35 @@ class TemplateManager:
                 mime_type = 'image/webp'  # Default fallback
             
             return f"""
-/* Fixed Background Image - {display_name} - iPad Safari Compatible */
-.app::before {{
-    content: '';
+/* Independent Fixed Background Layer - {display_name} - Best iPad Safari Compatibility */
+body {{
+    background: none;
+    /* iOS 16+ optimization - prevent overscroll bounce affecting background */
+    overscroll-behavior: none;
+}}
+
+body::before {{
+    content: "";
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url(data:{mime_type};base64,{base64_data});
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    inset: 0;                 /* top/right/bottom/left: 0 */
     z-index: -1;
-    /* Optimize for mobile performance */
+    pointer-events: none;
+    background: url(data:{mime_type};base64,{base64_data}) center / cover no-repeat;
+    
+    /* Force independent compositing layer to reduce scroll jank */
+    transform: translateZ(0);
     will-change: transform;
+    
+    /* Additional mobile optimizations */
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
 }}
 
-/* Ensure app container is properly positioned */
+/* Ensure proper content layering */
 .app {{
     position: relative;
     min-height: 100vh;
+    background: none;
 }}
 
 .app-container {{
