@@ -121,7 +121,7 @@ class MetricsManager:
                               for r in rollout_results]
         
         if conversation_rounds:
-            return self.stats.compute_stats(conversation_rounds, "conversation/rounds")
+            return self.stats.compute_stats(conversation_rounds, "conversation/rounds", ["mean", "min", "max"])
         return {}
     
     def _compute_tool_metrics(self, rollout_results) -> Dict[str, Any]:
@@ -140,7 +140,7 @@ class MetricsManager:
         
         metrics = {}
         if total_tool_calls:
-            metrics.update(self.stats.compute_stats(total_tool_calls, "tools/total"))
+            metrics.update(self.stats.compute_stats(total_tool_calls, "tools/total", ["mean", "min", "max"]))
         
         for tool_name, count in tool_usage.items():
             metrics[f"tools/{tool_name}/count"] = count
@@ -182,9 +182,9 @@ class MetricsManager:
             metrics.update(self.stats.compute_stats(weighted_rewards, "rewards/weighted", ["mean", "std"]))
         
         # Turn-level reward metrics
-        metrics.update(self.stats.compute_component_stats(turn_reward_components, "turn_rewards", ["mean", "std", "count"]))
+        metrics.update(self.stats.compute_component_stats(turn_reward_components, "turn_rewards", ["mean", "std"]))
         if weighted_turn_rewards:
-            metrics.update(self.stats.compute_stats(weighted_turn_rewards, "turn_rewards/weighted", ["mean", "std", "count"]))
+            metrics.update(self.stats.compute_stats(weighted_turn_rewards, "turn_rewards/weighted", ["mean", "std"]))
         
         return metrics
     

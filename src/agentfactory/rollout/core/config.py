@@ -401,7 +401,7 @@ class BatchRolloutRequest(BaseModel):
         description="Delay in seconds between starting new rollouts"
     )
     single_rollout_timeout: float = Field(
-        default=300.0,
+        default=600.0,
         gt=0,
         description="Timeout in seconds for individual rollouts"
     )

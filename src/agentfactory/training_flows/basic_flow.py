@@ -107,8 +107,15 @@ class BasicFlow:
 
             self._sync_model_weights()
 
+            # Run evaluation if configured and due (after weight sync)
+            with CpuBarrier(self.accelerator):
+                if self.accelerator.is_main_process and self._should_run_evaluation(self._iteration):
+                    self.run_evaluation(self._iteration)
+
             with CpuBarrier(self.accelerator):
                 if self.accelerator.is_main_process:
+                    # Wake up inference engine for training rollout (might be asleep after evaluation)
+                    self.inference_engine.wake_up()
                     batch_request = self.get_batch_requests(self._iteration)
                     batch_rollout_result = self.rollout_worker.run(batch_request)
                     self._estimate_advantages(batch_rollout_result)
@@ -142,6 +149,36 @@ class BasicFlow:
                 if "wandb" in self.config.report_to and per_token_logs:
                     self._upload_token_visualizer(per_token_logs)
                 
+                # Convert to unified format and save for analysis
+                if per_token_logs:
+                    from ..visualizer_ex import convert_rollout_batch, aggregate_step_data
+                    
+                    # HACK: Attach data source info to batch_rollout_result for converter
+                    # TODO: Clean this up with proper parameter passing
+                    batch_rollout_result._data_source_info = {
+                        'name': getattr(self.config.data.train, 'hf_hub_url', None) or 
+                                getattr(self.config.data.train, 'file_name', None) or 'unknown',
+                        'source_type': 'hf_hub' if getattr(self.config.data.train, 'hf_hub_url', None) else 'local_file',
+                        'split': getattr(self.config.data.train, 'split', None)
+                    }
+                    
+                    groups = convert_rollout_batch(
+                        batch_rollout_result, 
+                        per_token_logs, 
+                        processing_class=self.trainer.processing_class
+                    )
+                    step_data = aggregate_step_data(
+                        step=self._iteration, 
+                        groups=groups, 
+                        training_metrics=metrics
+                    )
+                    
+                    # Save unified data for analysis
+                    unified_data_path = self.rollout_save_dir / f"unified_step_data_iter{self._iteration}.json"
+                    with open(unified_data_path, "w") as f:
+                        f.write(step_data.model_dump_json(indent=2))
+                    logger.info(f"Unified step data saved to {unified_data_path}")
+                
                 # Stop profiling and async save/upload results
                 if profiling_started and self.profiler_manager:
                     # Get HTML and cleanup profiler instance immediately
@@ -151,11 +188,6 @@ class BasicFlow:
                         profile_file = self.rollout_save_dir / f"profile_{profiler_name}_iter{self._iteration}.html"
                         current_step = self._iteration
                         self._async_save(self._save_profile_data, profile_file, html_content, profiler_name, current_step)
-            
-            # Run evaluation if configured and due
-            with CpuBarrier(self.accelerator):
-                if self.accelerator.is_main_process and self._should_run_evaluation(self._iteration):
-                    self.run_evaluation(self._iteration)
             
             self._iteration += 1
 
@@ -246,9 +278,9 @@ class BasicFlow:
         if self.config.evaluation.steps is None:
             return False
         
-        # Run on first step if configured
-        if iteration == 0 and self.config.evaluation.on_first_step:
-            return True
+        # Handle first step case
+        if iteration == 0:
+            return self.config.evaluation.on_first_step
             
         # Run based on evaluation frequency
         if self.config.evaluation.steps > 0 and iteration % self.config.evaluation.steps == 0:
@@ -540,8 +572,8 @@ class BasicFlow:
         import importlib.util
         from pathlib import Path
         
-        # Get project root directory (where AgentFactory root is)
-        project_root = Path(__file__).parent.parent.parent.parent
+        # Get current working directory (where the training is running from)
+        project_root = Path.cwd()
         
         for plugin_path in plugins:
             try:
@@ -650,6 +682,7 @@ class BasicFlow:
         try:
             import wandb
             from ..visualizer.token_visualizer import generate_token_visualizer_html
+            from ..visualizer_new import create_token_app
             
             if not wandb.run or not per_token_logs:
                 return
@@ -689,11 +722,20 @@ class BasicFlow:
                 max_sequences = min(self.config.num_token_logs_to_upload, len(sequences_data))
                 sequences_data = sequences_data[:max_sequences]
                 
-                html_content = generate_token_visualizer_html(
-                    sequences_data,
-                    title=f"Token Analysis - Step {self._iteration}",
-                    collapse_min_length=3
-                )
+                # Try new optimized visualizer first, fallback to legacy
+                try:
+                    html_content = create_token_app(
+                        token_data=sequences_data,
+                        title=f"🌸 Token Analysis - Step {self._iteration} 🌸"
+                    )
+                    logger.debug(f"Using optimized token visualizer for {len(sequences_data)} sequences")
+                except Exception as e:
+                    logger.warning(f"Optimized visualizer failed, using legacy: {e}")
+                    html_content = generate_token_visualizer_html(
+                        sequences_data,
+                        title=f"Token Analysis - Step {self._iteration}",
+                        collapse_min_length=3
+                    )
                 
                 wandb.log({"Token Visualizer": wandb.Html(html_content, inject=False)}, step=self._iteration)
                 logger.debug(f"Uploaded token visualizer for {len(sequences_data)} sequences to wandb")

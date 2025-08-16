@@ -178,3 +178,11 @@ cython_debug/
 
 # Claude
 CLAUDE.md
+
+# Visualization test files and temporary outputs
+test_*token_viewer*.py
+test_*token_viewer*.html
+test_visualization.py
+visualization_output/
+# Local Netlify folder
+.netlify

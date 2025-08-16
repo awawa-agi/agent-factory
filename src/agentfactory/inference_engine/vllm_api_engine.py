@@ -143,9 +143,12 @@ class VLLMApiEngine(BaseInferenceEngine):
     def server_urls(self) -> list[str]:
         return self._server_urls
 
-
     def sleep(self):
         """Put inference servers to sleep to free GPU memory"""
+        reset_prefix_cache_result = self._reset_prefix_cache()
+        if not reset_prefix_cache_result["success"]:
+            raise RuntimeError(f"Failed to reset prefix cache: {reset_prefix_cache_result['errors']}")
+        
         result = self._sleep()
         if not result["success"]:
             raise RuntimeError(f"Failed to put servers to sleep: {result['errors']}")

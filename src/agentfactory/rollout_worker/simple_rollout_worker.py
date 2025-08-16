@@ -49,6 +49,9 @@ class SimpleAsyncRolloutWorker:
                         i, request, batch_request, limiter, monitor, results
                     )
                     await anyio.sleep(batch_request.start_interval)
+            
+            # Give a moment for any remaining async cleanup (httpx clients, etc.)
+            await anyio.sleep(0.05)
         
         valid_results = [r for r in results if r is not None]
         
